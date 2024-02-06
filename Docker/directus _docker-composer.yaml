@@ -1,0 +1,104 @@
+version: '3'
+services:
+  directus-db:
+    container_name: directus-db
+    hostname: directus-db
+    image: postgis/postgis:13-master
+    volumes:
+      - directus_data:/var/lib/postgresql/data
+    networks:
+      - directus
+      - dbnet
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_PORT: ${DB_PORT}
+      PGPORT: ${DB_PORT}
+    expose:
+      - ${DB_PORT}
+
+  # For a single server, cache has been disabled
+  # cache:
+  #   container_name: cache
+  #   image: redis:6
+  #   networks:
+  #     - directus
+
+  directus:
+    container_name: directus
+    image: directus/directus:10.6.1
+    volumes:
+      # By default, uploads are stored in /directus/uploads
+      # Always make sure your volumes matches the storage root when using
+      # local driver
+      - ./uploads:/directus/uploads
+      # If you want to load extensions from the host
+      - ./extensions:/directus/extensions
+      # Make sure to also mount the volume when using SQLite
+      # - ./database:/directus/database
+    networks:
+      - directus
+      - proxy
+    depends_on:
+      # - cache
+      - directus-db
+    environment:
+      KEY: ${KEY}
+      SECRET: ${SECRET}
+
+      # Database
+      DB_CLIENT: ${DB_CLIENT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # Cache
+      # CACHE_ENABLED: ${CACHE_ENABLED}
+      # CACHE_STORE: ${CACHE_STORE}
+      # CACHE_REDIS: ${CACHE_REDIS}
+
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+      # Nginx
+      VIRTUAL_HOST: ${VIRTUAL_HOST}
+      VIRTUAL_PORT: ${VIRTUAL_PORT}
+      LETSENCRYPT_HOST: ${VIRTUAL_HOST}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL}
+
+      # Email
+      EMAIL_TRANSPORT: ${EMAIL_TRANSPORT}
+      EMAIL_SMTP_NAME: ${EMAIL_SMTP_NAME}
+      EMAIL_SMTP_HOST: ${EMAIL_SMTP_HOST}
+      EMAIL_SMTP_PORT: ${EMAIL_SMTP_PORT}
+      EMAIL_SMTP_USER: ${EMAIL_SMTP_USER}
+      EMAIL_SMTP_PASSWORD: ${EMAIL_SMTP_PASSWORD}
+      EMAIL_SMTP_SECURE: ${EMAIL_SMTP_SECURE}
+      EMAIL_SMTP_IGNORE_TLS: ${EMAIL_SMTP_IGNORE_TLS}
+
+      # Make sure to set this in production
+      # (see https://docs.directus.io/configuration/config-options/#general)
+      PUBLIC_URL: ${PUBLIC_URL}
+
+      # CORS
+      CORS_ENABLED: ${CORS_ENABLED}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      CORS_METHODS: ${CORS_METHODS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS}
+      CORS_EXPOSED_HEADERS: ${CORS_EXPOSED_HEADERS}
+      CORS_CREDENTIALS: ${CORS_CREDENTIALS}
+      CORS_MAX_AGE: ${CORS_MAX_AGE}
+
+networks:
+  directus:
+  proxy:
+    external: true
+  dbnet:
+    external: true
+
+volumes:
+  directus_data:
+    external: true
